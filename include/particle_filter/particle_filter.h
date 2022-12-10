@@ -3,26 +3,36 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
+#include <vector>
+
+// #include "GaussianMixtureModel/GaussianMixtureModel.h"
 
 
 class ParticleFilter
 {
     private:
+        double r_sens_;         // sensing range
         int n_;                                 // number of particles
         bool initialized_;                      // flag for initialization
         Eigen::VectorXd state_;               // state vector
         Eigen::VectorXd w_;                     // weights of particles
         Eigen::MatrixXd particles_;             // particles matrix -- 1 particle (x,y,th) per column
         Eigen::VectorXd stateCovariance_;                 // noise vector (x,y,th)
+        // gauss::gmm::GaussianMixtureModel gmm_;   // Gaussian Mixture Model 
 
     public:
         ParticleFilter(int particles_num, Eigen::VectorXd initState, Eigen::VectorXd initCovariance);       // constructor
         ~ParticleFilter();                                              // destructor
         void predict(Eigen::VectorXd u, double dt);   // prediction step
-        Eigen::VectorXd diffdriveKinematicks(Eigen::VectorXd q, Eigen::VectorXd u, double dt);
+        Eigen::VectorXd diffdriveKinematics(Eigen::VectorXd q, Eigen::VectorXd u, double dt);
         void updateWeights();
-        void resample();
+        std::vector<Eigen::VectorXd> resample(Eigen::VectorXd q, double fov, double r_sens);         // outputs new set of particles
         Eigen::MatrixXd getParticles();
+        void setParticles(Eigen::MatrixXd parts);
+        void setProcessCovariance(Eigen::VectorXd cov);             // set process covariance as vector (= diag matrix)
+        // bool insideFOV(Eigen::VectorXd q, Eigen::VectorXd q_obs, double fov, double r_sens);
+        // gauss::gmm::GaussianMixtureModel getGMM();
+        
 
 };
 

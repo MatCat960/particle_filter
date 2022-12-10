@@ -3,17 +3,22 @@
 #include <random>
 #include <numeric>
 #include <algorithm>
+#include <vector>
 
 #include "particle_filter/particle_filter.h"
 
 
 ParticleFilter::ParticleFilter(int particles_num, Eigen::VectorXd initState, Eigen::VectorXd initCovariance)
 {
+    // std::cout << "Particle filter constructor called" << std::endl;
+    std::cout << "Number of particles: " << particles_num << std::endl;
+    r_sens_ = 4.0;
     n_ = particles_num;
     state_ = initState;
+    size_t state_size = initState.size();
     w_.resize(n_);
     w_.setZero();
-    particles_.resize(3, n_);
+    particles_.resize(state_size, n_);
     particles_.setZero();
     stateCovariance_ = initCovariance;
 
@@ -38,6 +43,7 @@ ParticleFilter::ParticleFilter(int particles_num, Eigen::VectorXd initState, Eig
     }
 
     initialized_ = true;
+    // std::cout << "Particle fi"
 }
 
 ParticleFilter::~ParticleFilter()
@@ -50,7 +56,27 @@ Eigen::MatrixXd ParticleFilter::getParticles()
     return particles_;
 }
 
-Eigen::VectorXd ParticleFilter::diffdriveKinematicks(Eigen::VectorXd q, Eigen::VectorXd u, double dt)
+void ParticleFilter::setParticles(Eigen::MatrixXd parts)
+{
+    // std::cout << "Entered particles setter." << std::endl;
+    // particles_.clear();
+    // std::cout << "Cleared\n";
+    particles_.resize(parts.rows(), parts.cols());
+    // std::cout << "Resized\n";
+    for (int i=0; i<parts.cols(); i++)
+    {
+        particles_(0,i) = parts(0,i);
+        particles_(1,i) = parts(1,i);
+        particles_(2,i) = parts(2,i);
+    }
+}
+
+void ParticleFilter::setProcessCovariance(Eigen::VectorXd cov)
+{
+    stateCovariance_ = cov;
+}
+
+Eigen::VectorXd ParticleFilter::diffdriveKinematics(Eigen::VectorXd q, Eigen::VectorXd u, double dt)
 {
     // !!! u = [wr, wl] !!!
     int n = q.size();
@@ -84,7 +110,7 @@ void ParticleFilter::predict(Eigen::VectorXd u, double dt)
     {
         // Predict evolution of each particle
         Eigen::VectorXd q_next(3);
-        q_next = diffdriveKinematicks(particles_.col(i), u, dt);
+        q_next = diffdriveKinematics(particles_.col(i), u, dt);
 
         // Add noise to each particle
         std::normal_distribution<double> dist_x(q_next(0), sigma_x);
@@ -96,4 +122,35 @@ void ParticleFilter::predict(Eigen::VectorXd u, double dt)
         particles_(1,i) = dist_y(gen);
         particles_(2,i) = dist_th(gen);
     }
+}
+
+
+
+std::vector<Eigen::VectorXd> ParticleFilter::resample(Eigen::VectorXd q, double fov, double r_sens)
+{
+    std::vector<Eigen::VectorXd> particles_resampled;
+    size_t size = q.size();
+
+    // Delete particles inside fov (I would see it)
+    // for (int i=0; i<n_; i++)
+    // {
+    //     if (!insideFOV(q, particles_.col(i), fov, r_sens))
+    //     {
+    //         Eigen::VectorXd p(size);
+    //         p(0) = particles_(0,i);
+    //         p(1) = particles_(1,i);
+    //         p(2) = particles_(2,i);
+    //         particles_resampled.push_back(p);
+    //     }
+    // }
+
+    int needed_particles = n_ - particles_resampled.size();             // num of particles missing to reach the desired total number
+    
+
+    // ---- Get distribution of particles outside fov (GMM) -----
+
+
+    // Generate new particles according to the GMM distribution
+    // Add new particles to the resampled particles to get 1000 total
+
 }
