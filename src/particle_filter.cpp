@@ -71,6 +71,19 @@ void ParticleFilter::setParticles(Eigen::MatrixXd parts)
     }
 }
 
+void ParticleFilter::setParticles(std::vector<Eigen::VectorXd> parts)
+{
+    particles_.resize(parts[0].rows(), parts.size());
+    // std::cout << "Resized\n";
+    for (int i=0; i<parts.size(); i++)
+    {
+        // particles_(0,i) = parts(0,i);
+        // particles_(1,i) = parts(1,i);
+        // particles_(2,i) = parts(2,i);
+        particles_.col(i) = parts[i];
+    }
+}
+
 void ParticleFilter::setProcessCovariance(Eigen::VectorXd cov)
 {
     stateCovariance_ = cov;
@@ -94,6 +107,21 @@ Eigen::VectorXd ParticleFilter::diffdriveKinematics(Eigen::VectorXd q, Eigen::Ve
     // std::cout << "q_next: " << q_next.transpose() << std::endl;
 
     return q_next;
+}
+
+
+Eigen::MatrixXd ParticleFilter::multiDiffdriveKinematics(Eigen::MatrixXd q, Eigen::MatrixXd u, double dt)
+{
+    // !!! u = [wl, wr] !!!
+    // Each column of q and u is a state and input vector
+    Eigen::MatrixXd q_next(q.rows(), q.cols());
+    for (int i=0; i<q.cols(); i++)
+    {
+        q_next.col(i) = diffdriveKinematics(q.col(i), u.col(i), dt);
+    }
+
+    return q_next;
+    
 }
 
 
@@ -153,4 +181,49 @@ std::vector<Eigen::VectorXd> ParticleFilter::resample(Eigen::VectorXd q, double 
     // Generate new particles according to the GMM distribution
     // Add new particles to the resampled particles to get 1000 total
 
+}
+
+
+void ParticleFilter::matchObservation(Eigen::VectorXd q)
+{
+    // Generate new particles based on observation
+    // Default covariance is very small assuming the observation is perfect, set it higher if you want to add noise to the observation
+    state_ = q;
+    stateCovariance_ = 0.1*Eigen::VectorXd::Ones(3);
+
+    double sigma_x, sigma_y, sigma_th;
+    sigma_x = stateCovariance_(0);
+    sigma_y = stateCovariance_(1);
+    sigma_th = stateCovariance_(2);
+
+    std::normal_distribution<double> dist_x(state_(0), sigma_x);
+    std::normal_distribution<double> dist_y(state_(1), sigma_y);
+    std::normal_distribution<double> dist_th(state_(2), sigma_th);
+
+    std::default_random_engine gen;
+
+    // Create particles
+    for (int i=0; i<n_; i++)
+    {
+        particles_(0,i) = dist_x(gen);
+        particles_(1,i) = dist_y(gen);
+        particles_(2,i) = dist_th(gen);
+        w_(i) = 1.0;
+    }
+}
+
+Eigen::VectorXd ParticleFilter::getMean()
+{
+    Eigen::VectorXd mean(3);
+    mean(0) = particles_.row(0).mean();
+    mean(1) = particles_.row(1).mean();
+    mean(2) = particles_.row(2).mean();
+
+    return mean;
+}
+
+
+Eigen::VectorXd ParticleFilter::getState()
+{
+    return state_;
 }
