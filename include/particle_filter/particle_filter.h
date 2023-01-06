@@ -25,13 +25,16 @@ class ParticleFilter
         ~ParticleFilter();                                              // destructor
         void predict(Eigen::VectorXd u, double dt);   // prediction step
         Eigen::VectorXd diffdriveKinematics(Eigen::VectorXd q, Eigen::VectorXd u, double dt);
+        Eigen::MatrixXd multiDiffdriveKinematics(Eigen::MatrixXd q, Eigen::MatrixXd u, double dt);
         void updateWeights();
         std::vector<Eigen::VectorXd> resample(Eigen::VectorXd q, double fov, double r_sens);         // outputs new set of particles
         Eigen::MatrixXd getParticles();
         void setParticles(Eigen::MatrixXd parts);
+        void setParticles(std::vector<Eigen::VectorXd> parts);
         void setProcessCovariance(Eigen::VectorXd cov);             // set process covariance as vector (= diag matrix)
-        // bool insideFOV(Eigen::VectorXd q, Eigen::VectorXd q_obs, double fov, double r_sens);
-        // gauss::gmm::GaussianMixtureModel getGMM();
+        void matchObservation(Eigen::VectorXd q);                   // update particles based on observation
+        Eigen::VectorXd getState();
+        Eigen::VectorXd getMean();
         
 
 };
