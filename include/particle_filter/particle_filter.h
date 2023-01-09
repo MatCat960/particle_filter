@@ -24,8 +24,10 @@ class ParticleFilter
         ParticleFilter(int particles_num, Eigen::VectorXd initState, Eigen::VectorXd initCovariance);       // constructor
         ~ParticleFilter();                                              // destructor
         void predict(Eigen::VectorXd u, double dt);   // prediction step
+        void predictUAV(Eigen::VectorXd u, double dt);
         Eigen::VectorXd diffdriveKinematics(Eigen::VectorXd q, Eigen::VectorXd u, double dt);
         Eigen::MatrixXd multiDiffdriveKinematics(Eigen::MatrixXd q, Eigen::MatrixXd u, double dt);
+        Eigen::VectorXd UAVKinematics(Eigen::VectorXd q, Eigen::VectorXd u, double dt);
         void updateWeights();
         std::vector<Eigen::VectorXd> resample(Eigen::VectorXd q, double fov, double r_sens);         // outputs new set of particles
         Eigen::MatrixXd getParticles();

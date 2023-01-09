@@ -110,6 +110,23 @@ Eigen::VectorXd ParticleFilter::diffdriveKinematics(Eigen::VectorXd q, Eigen::Ve
 }
 
 
+Eigen::VectorXd ParticleFilter::UAVKinematics(Eigen::VectorXd q, Eigen::VectorXd u, double dt)
+{
+    int n = q.size();
+    int m = u.size();
+    Eigen::VectorXd q_next(n);
+    Eigen::MatrixXd A;                     // state matrix A
+    A.resize(n,m);
+    A << 1, 0, 0, 0, 1, 0, 0, 0, 0;
+
+    q_next = q + A*u*dt;
+
+    // std::cout << "q_next: " << q_next.transpose() << std::endl;
+
+    return q_next;
+}
+
+
 Eigen::MatrixXd ParticleFilter::multiDiffdriveKinematics(Eigen::MatrixXd q, Eigen::MatrixXd u, double dt)
 {
     // !!! u = [wl, wr] !!!
@@ -139,6 +156,41 @@ void ParticleFilter::predict(Eigen::VectorXd u, double dt)
         // Predict evolution of each particle
         Eigen::VectorXd q_next(3);
         q_next = diffdriveKinematics(particles_.col(i), u, dt);
+
+        // Add noise to each particle
+        std::normal_distribution<double> dist_x(q_next(0), sigma_x);
+        std::normal_distribution<double> dist_y(q_next(1), sigma_y);
+        std::normal_distribution<double> dist_th(q_next(2), sigma_th);
+
+        // Update particles
+        particles_(0,i) = dist_x(gen);
+        particles_(1,i) = dist_y(gen);
+        particles_(2,i) = dist_th(gen);
+    }
+}
+
+void ParticleFilter::predictUAV(Eigen::VectorXd u, double dt)
+{
+    if (u.size() < 3)
+    {
+        for (int i = u.size(); i < 3; i++)
+        {
+            u.conservativeResize(u.size()+1);
+            u(i) = 0.0;
+        }
+    }
+    double sigma_x, sigma_y, sigma_th;
+    sigma_x = stateCovariance_(0);
+    sigma_y = stateCovariance_(1);
+    sigma_th = stateCovariance_(2);
+
+    std::default_random_engine gen;
+
+    for (int i=0; i < n_; i++)
+    {
+        // Predict evolution of each particle
+        Eigen::VectorXd q_next(3);
+        q_next = UAVKinematics(particles_.col(i), u, dt);
 
         // Add noise to each particle
         std::normal_distribution<double> dist_x(q_next(0), sigma_x);
