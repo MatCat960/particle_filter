@@ -36,7 +36,9 @@ class ParticleFilter
         void setProcessCovariance(Eigen::VectorXd cov);             // set process covariance as vector (= diag matrix)
         void matchObservation(Eigen::VectorXd q);                   // update particles based on observation
         Eigen::VectorXd getState();
+        void setState(Eigen::VectorXd q);
         Eigen::VectorXd getMean();
+        void remove_outliers(Eigen::VectorXd mean, Eigen::MatrixXd cov_matrix, double threshold);
         
 
 };

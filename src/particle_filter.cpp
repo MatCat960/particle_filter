@@ -279,3 +279,57 @@ Eigen::VectorXd ParticleFilter::getState()
 {
     return state_;
 }
+
+void ParticleFilter::setState(Eigen::VectorXd q)
+{
+    state_ = q;
+}
+
+void ParticleFilter::remove_outliers(Eigen::VectorXd mean, Eigen::MatrixXd cov_matrix, double threshold = 1e-7)
+{
+    // Identify outliers
+    std::vector<Eigen::VectorXd> new_particles;
+
+    double det = sqrt(pow(2*M_PI,2)*cov_matrix.determinant());
+    for (int i = 0; i < particles_.cols(); i++)
+    {
+        Eigen::VectorXd p = particles_.col(i);
+        Eigen::VectorXd diff = p - mean;
+        double exponent = -0.5 * diff.transpose() * cov_matrix.inverse() * diff;
+        double w = 1/det * exp(exponent);
+        if (w > threshold)
+        {
+            new_particles.push_back(p);
+        } else
+        {
+            std::cout << "Outlier identified in " << particles_.col(i).transpose() << std::endl;
+        }
+    }
+
+    std::normal_distribution<double> dist_x(state_(0), cov_matrix(0,0));
+    std::normal_distribution<double> dist_y(state_(1), cov_matrix(1,1));
+    std::normal_distribution<double> dist_th(state_(2), cov_matrix(2,2));
+
+    std::default_random_engine gen;
+
+    // Generate new samples to replace removed outliers
+    int needed_particles = n_ - new_particles.size();             // num of particles missing to reach the desired total number
+    if (needed_particles > 0)
+    {
+        std::cout << "Generating " << needed_particles << " new particles" << std::endl;
+        for (int j = 0; j < needed_particles; j++)
+        {
+            Eigen::VectorXd p(3);
+            p(0) = dist_x(gen);
+            p(1) = dist_y(gen);
+            p(2) = dist_th(gen);
+            new_particles.push_back(p);
+        }
+    }
+
+    // Update particles
+    setParticles(new_particles);
+    
+}
+
+
