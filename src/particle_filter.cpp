@@ -205,33 +205,101 @@ void ParticleFilter::predictUAV(Eigen::VectorXd u, double dt)
 }
 
 
-
-std::vector<Eigen::VectorXd> ParticleFilter::resample(Eigen::VectorXd q, double fov, double r_sens)
+void ParticleFilter::updateWeights(std::vector<Eigen::VectorXd> observations, double sigma = 0.1)
 {
-    std::vector<Eigen::VectorXd> particles_resampled;
-    size_t size = q.size();
+    // std::cout << "Starting set of particles: \n" << particles_.transpose() << std::endl;
+    double weights_sum = 0.0;
+    double den = 2 * M_PI * sigma * sigma;
+    int keep_counter = 0;
 
-    // Delete particles inside fov (I would see it)
-    // for (int i=0; i<n_; i++)
+    std::cout << "Observations: \n";
+    for (int j = 0; j < observations.size(); j++)
+    {
+        std::cout << observations[j].transpose() << std::endl;
+    }
+
+    for (int i = 0; i < n_; i++)
+    {
+        bool keep = false;
+        Eigen::VectorXd p = particles_.col(i);
+        // std::cout << "Considered particle: " << p.transpose() << std::endl;
+        double wt = 1.0;
+
+        for (int j = 0; j < observations.size(); j++)
+        {
+            Eigen::VectorXd obs = observations[j];
+            // std::cout << "Actual observation: " << obs.transpose() << std::endl;
+            double dist = sqrt(pow(obs(0)-p(0),2) + pow(obs(1)-p(1),2));      // distance particle -- observation
+            std::cout << "Distance: " << dist << std::endl;
+            if (dist < 3*sigma)
+            {   
+                keep = true;
+            }
+            // Update weight according to probability of a Multivariate Gaussian Distribution
+            double num = exp(-(pow((obs(0)-p(0)), 2) / pow(sigma, 2) + pow((obs(1)-p(1)), 2) / pow(sigma, 2)));
+            // std::cout << "Prob: " << num << std::endl;
+            
+            wt *= num;
+        }
+
+
+        // std::cout << "Weight of particle " << i << ": " << wt << std::endl;
+
+        weights_sum += wt;
+        if (keep)
+        {
+            w_(i) = 1.0;
+            keep_counter++;
+        } else
+        {
+            w_(i) = wt;
+        }
+    }
+
+    std::cout << "Particles removed: " << n_ - keep_counter << std::endl;
+    // std::cout << "Weights sum: " << weights_sum << std::endl;
+
+    // Normalize weights
+    // for (int i = 0; i < n_; i++)
     // {
-    //     if (!insideFOV(q, particles_.col(i), fov, r_sens))
-    //     {
-    //         Eigen::VectorXd p(size);
-    //         p(0) = particles_(0,i);
-    //         p(1) = particles_(1,i);
-    //         p(2) = particles_(2,i);
-    //         particles_resampled.push_back(p);
-    //     }
+    //     w_(i) /= weights_sum;
+    //     // std::cout << "Final weight of particle " << i << ": " << w_(i) << std::endl;
     // }
-
-    int needed_particles = n_ - particles_resampled.size();             // num of particles missing to reach the desired total number
-    
-
-    // ---- Get distribution of particles outside fov (GMM) -----
+}
 
 
-    // Generate new particles according to the GMM distribution
-    // Add new particles to the resampled particles to get 1000 total
+void ParticleFilter::resample()
+{
+    std::default_random_engine gen;
+    std::vector<double> weights;
+    std::vector<Eigen::VectorXd> init_particles;
+    std::vector<Eigen::VectorXd> resampled_particles;
+
+    // std::cout << "Weights: " << w_ << std::endl;
+
+    for (int i = 0; i < n_; i++)
+    {
+        weights.push_back(w_(i));
+        init_particles.push_back(particles_.col(i));
+    }
+
+    /* std::discrete_distribution produces random integers on the interval [0, n), where the probability of each individual integer i is defined as w
+    i/S, that is the weight of the ith integer divided by the sum of all n weights. */
+    std::discrete_distribution<int> distribution(weights.begin(), weights.end());
+    for (int i = 0; i < n_; i++)
+    {
+        resampled_particles.push_back(init_particles[distribution(gen)]);
+    }
+
+    std::cout << "New particles defined" << std::endl;
+
+    // Backwards conversion
+    for (int i = 0; i < n_; i++)
+    {
+        particles_.col(i) = resampled_particles[i];
+    }
+
+    // std::cout << "New particles: \n" << particles_.transpose() << std::endl;
 
 }
 

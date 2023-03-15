@@ -28,8 +28,8 @@ class ParticleFilter
         Eigen::VectorXd diffdriveKinematics(Eigen::VectorXd q, Eigen::VectorXd u, double dt);
         Eigen::MatrixXd multiDiffdriveKinematics(Eigen::MatrixXd q, Eigen::MatrixXd u, double dt);
         Eigen::VectorXd UAVKinematics(Eigen::VectorXd q, Eigen::VectorXd u, double dt);
-        void updateWeights();
-        std::vector<Eigen::VectorXd> resample(Eigen::VectorXd q, double fov, double r_sens);         // outputs new set of particles
+        void updateWeights(std::vector<Eigen::VectorXd> observations, double sigma);
+        void resample();         // outputs new set of particles
         Eigen::MatrixXd getParticles();
         void setParticles(Eigen::MatrixXd parts);
         void setParticles(std::vector<Eigen::VectorXd> parts);
