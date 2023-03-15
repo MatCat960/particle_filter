@@ -222,7 +222,6 @@ void ParticleFilter::updateWeights(std::vector<Eigen::VectorXd> observations, do
     {
         bool keep = false;
         Eigen::VectorXd p = particles_.col(i);
-        // std::cout << "Considered particle: " << p.transpose() << std::endl;
         double wt = 1.0;
 
         for (int j = 0; j < observations.size(); j++)
