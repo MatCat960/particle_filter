@@ -24,19 +24,23 @@ class ParticleFilter
         ParticleFilter(int particles_num, Eigen::VectorXd initState, Eigen::VectorXd initCovariance);       // constructor
         ~ParticleFilter();                                              // destructor
         void predict(Eigen::VectorXd u, double dt);   // prediction step
+        void predictUAV(Eigen::VectorXd u, double dt);
         Eigen::VectorXd diffdriveKinematics(Eigen::VectorXd q, Eigen::VectorXd u, double dt);
         Eigen::MatrixXd multiDiffdriveKinematics(Eigen::MatrixXd q, Eigen::MatrixXd u, double dt);
-        void updateWeights();
-        std::vector<Eigen::VectorXd> resample(Eigen::VectorXd q, double fov, double r_sens);         // outputs new set of particles
+        Eigen::VectorXd UAVKinematics(Eigen::VectorXd q, Eigen::VectorXd u, double dt);
+        void updateWeights(std::vector<Eigen::VectorXd> observations, double sigma);
+        void resample();         // outputs new set of particles
         Eigen::MatrixXd getParticles();
         void setParticles(Eigen::MatrixXd parts);
         void setParticles(std::vector<Eigen::VectorXd> parts);
         void setProcessCovariance(Eigen::VectorXd cov);             // set process covariance as vector (= diag matrix)
         void matchObservation(Eigen::VectorXd q);                   // update particles based on observation
         Eigen::VectorXd getState();
+        void setState(Eigen::VectorXd q);
         Eigen::VectorXd getMean();
+        void remove_outliers(Eigen::VectorXd mean, Eigen::MatrixXd cov_matrix, double threshold);
         
 
 };
 
-#endif // KALMAN_FILTER_H
+#endif // PARTICLE_FILTER_H
