@@ -242,7 +242,6 @@ void ParticleFilter::updateWeights(std::vector<Eigen::VectorXd> observations, do
         }
 
 
-        // std::cout << "Weight of particle " << i << ": " << wt << std::endl;
 
         weights_sum += wt;
         if (keep)
