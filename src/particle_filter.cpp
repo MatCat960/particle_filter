@@ -39,7 +39,7 @@ ParticleFilter::ParticleFilter(int particles_num, Eigen::VectorXd initState, Eig
         particles_(0,i) = dist_x(gen);
         particles_(1,i) = dist_y(gen);
         particles_(2,i) = dist_th(gen);
-        w_(i) = 1.0;
+        w_(i) = 1.0/n_;
     }
 
     initialized_ = true;
@@ -126,6 +126,21 @@ Eigen::VectorXd ParticleFilter::UAVKinematics(Eigen::VectorXd q, Eigen::VectorXd
     return q_next;
 }
 
+// Ackermann kinematics: q : [x,y,th] u : [v_lin]
+Eigen::VectorXd ParticleFilter::ackermannKinematics(Eigen::VectorXd q, Eigen::VectorXd u, double dt)
+{
+    double v = u(0);
+    double th = u(1);
+    // std::cout << "Received velocity: " << v << ", " << th << std::endl;
+    Eigen::Vector3d q_next;
+    q_next(0) = q(0) + v*cos(th)*dt;
+    q_next(1) = q(1) + v*sin(th)*dt;
+    q_next(2) = th;
+    // std::cout << "Predicted state: " << q_next.transpose() << std::endl;
+
+    return q_next;
+}
+
 
 Eigen::MatrixXd ParticleFilter::multiDiffdriveKinematics(Eigen::MatrixXd q, Eigen::MatrixXd u, double dt)
 {
@@ -204,13 +219,46 @@ void ParticleFilter::predictUAV(Eigen::VectorXd u, double dt)
     }
 }
 
+void ParticleFilter::predictAckermann(Eigen::VectorXd u, double dt)
+{
+    double sigma_x, sigma_y, sigma_th;
+    sigma_x = stateCovariance_(0);
+    sigma_y = stateCovariance_(1);
+    sigma_th = stateCovariance_(2);
 
+    std::default_random_engine gen;
+
+    for (int i=0; i < n_; i++)
+    {
+        // Predict evolution of each particle
+        Eigen::Vector3d q_next;
+        q_next = ackermannKinematics(particles_.col(i), u, dt);
+
+        // std::cout << "Next state: " << q_next.transpose() << std::endl;
+        // Add noise to each particle
+        std::normal_distribution<double> dist_x(q_next(0), sigma_x);
+        std::normal_distribution<double> dist_y(q_next(1), sigma_y);
+        std::normal_distribution<double> dist_th(q_next(2), sigma_th);
+
+        // Update particles
+        particles_(0,i) = dist_x(gen);
+        particles_(1,i) = dist_y(gen);
+        particles_(2,i) = dist_th(gen);
+    }
+
+    // std::cout << "New set of particles: \n" << particles_.transpose() << std::endl;
+}
+
+
+// observations is a std::vector of Eigen::Vector2d with detected landmarks in their position, 100.0 for undetected
 void ParticleFilter::updateWeights(std::vector<Eigen::VectorXd> observations, double sigma = 0.1)
 {
     // std::cout << "Starting set of particles: \n" << particles_.transpose() << std::endl;
     double weights_sum = 0.0;
     double den = 2 * M_PI * sigma * sigma;
     int keep_counter = 0;
+
+    
 
     std::cout << "Observations: \n";
     for (int j = 0; j < observations.size(); j++)
@@ -263,6 +311,52 @@ void ParticleFilter::updateWeights(std::vector<Eigen::VectorXd> observations, do
     //     w_(i) /= weights_sum;
     //     // std::cout << "Final weight of particle " << i << ": " << w_(i) << std::endl;
     // }
+}
+
+
+// observations is a std::vector of Eigen::Vector2d with detected landmarks in their position, 100.0 for undetected
+// landmarks is a global std::vector of Eigen::Vector2d with known positions of landmarks
+void ParticleFilter::updateWeights2(std::vector<Eigen::VectorXd> observations, double sigma = 0.1)
+{
+    std::vector<Eigen::Vector2d> landmarks(3);
+    landmarks[0] = {3.5, 1.5};
+    landmarks[1] = {5.0, 3.2};
+    landmarks[2] = {3.0, 6.3};
+
+    double total_weight = 0.0;
+    for (int i = 0; i < n_; i++)
+    {
+        Eigen::VectorXd p = particles_.col(i);
+        double likelihood = 1.0;
+        for (int j = 0; j < observations.size(); j++)
+        {
+            if (observations[j](0) != 100.0 && observations[j](1) != 100.0)
+            {
+                Eigen::Vector2d obs = observations[j];
+
+                // Get landmark's known position relative to actual particle
+                Eigen::Vector2d ld;
+                double th = p(2);
+                double dx = landmarks[j](0) - p(0);
+                double dy = landmarks[j](1) - p(1);
+
+                ld(0) = dx * cos(th) + dy * sin(th);
+                ld(1) = -dx * sin(th) + dy * cos(th);
+
+                // std::cout << "Landmark relative position: " << ld.transpose() << std::endl;
+
+                likelihood *= std::exp(-0.5 * (pow((obs(0)-ld(0)), 2) / pow(sigma, 2) + pow((obs(1)-ld(1)), 2) / pow(sigma, 2)));
+            }
+        }
+
+        w_(i) = likelihood;
+        total_weight += w_(i);
+
+        // std::cout << "w_" << std::to_string(i) << " = " << likelihood << std::endl;
+    }
+
+    // normalize weights
+    w_ = w_ / total_weight;
 }
 
 
