@@ -25,10 +25,13 @@ class ParticleFilter
         ~ParticleFilter();                                              // destructor
         void predict(Eigen::VectorXd u, double dt);   // prediction step
         void predictUAV(Eigen::VectorXd u, double dt);
+        void predictAckermann(Eigen::VectorXd u, double dt);
         Eigen::VectorXd diffdriveKinematics(Eigen::VectorXd q, Eigen::VectorXd u, double dt);
+        Eigen::VectorXd ackermannKinematics(Eigen::VectorXd q, Eigen::VectorXd u, double dt);
         Eigen::MatrixXd multiDiffdriveKinematics(Eigen::MatrixXd q, Eigen::MatrixXd u, double dt);
         Eigen::VectorXd UAVKinematics(Eigen::VectorXd q, Eigen::VectorXd u, double dt);
         void updateWeights(std::vector<Eigen::VectorXd> observations, double sigma);
+        void updateWeights2(std::vector<Eigen::VectorXd> observations, double sigma);
         void resample();         // outputs new set of particles
         Eigen::MatrixXd getParticles();
         void setParticles(Eigen::MatrixXd parts);
@@ -43,4 +46,4 @@ class ParticleFilter
 
 };
 
-#endif // KALMAN_FILTER_H
+#endif // PARTICLE_FILTER_H
