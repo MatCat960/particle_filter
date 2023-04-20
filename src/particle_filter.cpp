@@ -219,14 +219,16 @@ void ParticleFilter::predictUAV(Eigen::VectorXd u, double dt)
     }
 }
 
-void ParticleFilter::predictAckermann(Eigen::VectorXd u, double dt)
+void ParticleFilter::predictAckermann(Eigen::VectorXd u, double dt, double sigma)
 {
     double sigma_x, sigma_y, sigma_th;
-    sigma_x = stateCovariance_(0);
-    sigma_y = stateCovariance_(1);
-    sigma_th = stateCovariance_(2);
+    sigma_x = sigma;
+    sigma_y = sigma;
+    sigma_th = sigma;
 
     std::default_random_engine gen;
+
+    // std::cout << "Received vel: " << u.transpose() << std::endl;
 
     for (int i=0; i < n_; i++)
     {
@@ -356,7 +358,12 @@ void ParticleFilter::updateWeights2(std::vector<Eigen::VectorXd> observations, d
     }
 
     // normalize weights
-    w_ = w_ / total_weight;
+    std::cout << "Total weight: " << total_weight << std::endl;
+    if (total_weight != 0.0)
+    {
+        w_ = w_ / total_weight;
+        // std::cout << "Weights: " << w_ << std::endl;
+    }
 }
 
 
@@ -365,7 +372,7 @@ void ParticleFilter::resample()
     std::default_random_engine gen;
     std::vector<double> weights;
     std::vector<Eigen::VectorXd> init_particles;
-    std::vector<Eigen::VectorXd> resampled_particles;
+    std::vector<Eigen::VectorXd> resampled_particles(n_);
 
     // std::cout << "Weights: " << w_ << std::endl;
 
@@ -378,9 +385,18 @@ void ParticleFilter::resample()
     /* std::discrete_distribution produces random integers on the interval [0, n), where the probability of each individual integer i is defined as w
     i/S, that is the weight of the ith integer divided by the sum of all n weights. */
     std::discrete_distribution<int> distribution(weights.begin(), weights.end());
+    /*
     for (int i = 0; i < n_; i++)
     {
         resampled_particles.push_back(init_particles[distribution(gen)]);
+    }
+    */
+
+    for(int i = 0; i < n_; i++)
+    {
+        int index = distribution(gen);
+        resampled_particles[i] = init_particles[index];
+        w_(i) = weights[index];
     }
 
     std::cout << "New particles defined" << std::endl;
