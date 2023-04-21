@@ -250,67 +250,44 @@ void ParticleFilter::predictAckermann(Eigen::VectorXd u, double dt)
 }
 
 
-// observations is a std::vector of Eigen::Vector2d with detected landmarks in their position, 100.0 for undetected
-void ParticleFilter::updateWeights(std::vector<Eigen::VectorXd> observations, double sigma = 0.1)
+void ParticleFilter::setWeights(Eigen::VectorXd weights)
 {
-    // std::cout << "Starting set of particles: \n" << particles_.transpose() << std::endl;
-    double weights_sum = 0.0;
-    double den = 2 * M_PI * sigma * sigma;
-    int keep_counter = 0;
+    w_ = weights;
+}
 
-    
+Eigen::VectorXd ParticleFilter::getWeights()
+{
+    return w_;
+}
 
-    std::cout << "Observations: \n";
-    for (int j = 0; j < observations.size(); j++)
-    {
-        std::cout << observations[j].transpose() << std::endl;
-    }
 
+// update weight from the detection of a neighbor. Detection is assumed to be accurate
+void ParticleFilter::updateWeights(Eigen::VectorXd observation, double sigma = 0.01)
+{
+    double total_weight = 0.0;
+    std::cout << "Observed neighbor: " << observation.transpose() << std::endl;
     for (int i = 0; i < n_; i++)
     {
-        bool keep = false;
         Eigen::VectorXd p = particles_.col(i);
-        double wt = 1.0;
+        // double likelihood = 1.0;
+    
+        Eigen::Vector2d obs = observation.head(2);
 
-        for (int j = 0; j < observations.size(); j++)
-        {
-            Eigen::VectorXd obs = observations[j];
-            // std::cout << "Actual observation: " << obs.transpose() << std::endl;
-            double dist = sqrt(pow(obs(0)-p(0),2) + pow(obs(1)-p(1),2));      // distance particle -- observation
-            std::cout << "Distance: " << dist << std::endl;
-            if (dist < 3*sigma)
-            {   
-                keep = true;
-            }
-            // Update weight according to probability of a Multivariate Gaussian Distribution
-            double num = exp(-(pow((obs(0)-p(0)), 2) / pow(sigma, 2) + pow((obs(1)-p(1)), 2) / pow(sigma, 2)));
-            // std::cout << "Prob: " << num << std::endl;
-            
-            wt *= num;
-        }
+        // std::cout << "Landmark relative position: " << ld.transpose() << std::endl;
 
+        double likelihood = std::exp(-0.5 * (pow((obs(0)-p(0)), 2) / pow(sigma, 2) + pow((obs(1)-p(1)), 2) / pow(sigma, 2)));
+    
 
+        w_(i) = likelihood;
+        total_weight += w_(i);
 
-        weights_sum += wt;
-        if (keep)
-        {
-            w_(i) = 1.0;
-            keep_counter++;
-        } else
-        {
-            w_(i) = wt;
-        }
+        // std::cout << "w_" << std::to_string(i) << " = " << likelihood << std::endl;
     }
 
-    std::cout << "Particles removed: " << n_ - keep_counter << std::endl;
-    // std::cout << "Weights sum: " << weights_sum << std::endl;
+    std::cout << "Total weight: " << total_weight << std::endl;
 
-    // Normalize weights
-    // for (int i = 0; i < n_; i++)
-    // {
-    //     w_(i) /= weights_sum;
-    //     // std::cout << "Final weight of particle " << i << ": " << w_(i) << std::endl;
-    // }
+    // normalize weights
+    w_ = w_ / total_weight;
 }
 
 
@@ -365,6 +342,45 @@ void ParticleFilter::resample()
     std::default_random_engine gen;
     std::vector<double> weights;
     std::vector<Eigen::VectorXd> init_particles;
+    std::vector<Eigen::VectorXd> resampled_particles(n_);
+
+    // std::cout << "Weights: " << w_ << std::endl;
+
+    for (int i = 0; i < n_; i++)
+    {
+        weights.push_back(w_(i));
+        init_particles.push_back(particles_.col(i));
+    }
+
+    /* std::discrete_distribution produces random integers on the interval [0, n), where the probability of each individual integer i is defined as w
+    i/S, that is the weight of the ith integer divided by the sum of all n weights. */
+    std::discrete_distribution<int> distribution(weights.begin(), weights.end());
+    for (int i = 0; i < n_; i++)
+    {
+        int index = distribution(gen);
+        resampled_particles[i] = init_particles[index];
+        w_(i) = weights[index];
+    }
+
+    std::cout << "New particles defined" << std::endl;
+    
+
+    // Backwards conversion
+    for (int i = 0; i < n_; i++)
+    {
+        particles_.col(i) = resampled_particles[i];
+    }
+
+    // std::cout << "New particles: \n" << particles_.transpose() << std::endl;
+
+}
+
+
+void ParticleFilter::resampleUniform()
+{
+    std::default_random_engine gen;
+    std::vector<double> weights;
+    std::vector<Eigen::VectorXd> init_particles;
     std::vector<Eigen::VectorXd> resampled_particles;
 
     // std::cout << "Weights: " << w_ << std::endl;
@@ -389,6 +405,7 @@ void ParticleFilter::resample()
     for (int i = 0; i < n_; i++)
     {
         particles_.col(i) = resampled_particles[i];
+        w_(i) = 1.0 / n_;
     }
 
     // std::cout << "New particles: \n" << particles_.transpose() << std::endl;
@@ -420,9 +437,10 @@ void ParticleFilter::matchObservation(Eigen::VectorXd q)
         particles_(0,i) = dist_x(gen);
         particles_(1,i) = dist_y(gen);
         particles_(2,i) = dist_th(gen);
-        w_(i) = 1.0;
+        w_(i) = 1.0 / n_;
     }
 }
+
 
 Eigen::VectorXd ParticleFilter::getMean()
 {
@@ -432,6 +450,24 @@ Eigen::VectorXd ParticleFilter::getMean()
     mean(2) = particles_.row(2).mean();
 
     return mean;
+}
+
+Eigen::MatrixXd ParticleFilter::getCovariance()
+{
+    Eigen::MatrixXd cov_matrix(3,3);
+    cov_matrix.setZero();
+    Eigen::VectorXd mean = getMean();
+
+    for (int i = 0; i < n_; i++)
+    {
+        Eigen::Vector3d p = particles_.col(i);
+        Eigen::Vector3d diff = p - mean;
+        cov_matrix += diff * diff.transpose();
+    }
+
+    cov_matrix = cov_matrix / (n_-1);
+
+    return cov_matrix;
 }
 
 

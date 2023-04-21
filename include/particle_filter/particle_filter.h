@@ -30,10 +30,13 @@ class ParticleFilter
         Eigen::VectorXd ackermannKinematics(Eigen::VectorXd q, Eigen::VectorXd u, double dt);
         Eigen::MatrixXd multiDiffdriveKinematics(Eigen::MatrixXd q, Eigen::MatrixXd u, double dt);
         Eigen::VectorXd UAVKinematics(Eigen::VectorXd q, Eigen::VectorXd u, double dt);
-        void updateWeights(std::vector<Eigen::VectorXd> observations, double sigma);
+        void updateWeights(Eigen::VectorXd observation, double sigma);
         void updateWeights2(std::vector<Eigen::VectorXd> observations, double sigma);
         void resample();         // outputs new set of particles
+        void resampleUniform();
         Eigen::MatrixXd getParticles();
+        void setWeights(Eigen::VectorXd weights);
+        Eigen::VectorXd getWeights();
         void setParticles(Eigen::MatrixXd parts);
         void setParticles(std::vector<Eigen::VectorXd> parts);
         void setProcessCovariance(Eigen::VectorXd cov);             // set process covariance as vector (= diag matrix)
@@ -41,6 +44,7 @@ class ParticleFilter
         Eigen::VectorXd getState();
         void setState(Eigen::VectorXd q);
         Eigen::VectorXd getMean();
+        Eigen::MatrixXd getCovariance();
         void remove_outliers(Eigen::VectorXd mean, Eigen::MatrixXd cov_matrix, double threshold);
         
 
