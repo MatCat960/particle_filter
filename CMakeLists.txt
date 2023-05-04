@@ -16,7 +16,14 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 # find dependencies
-find_package(catkin REQUIRED)
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  geometry_msgs
+  nav_msgs
+  tf2
+  tf2_ros
+  visualization_msgs
+)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
@@ -41,6 +48,10 @@ add_library(particle_filter
 
 add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(particle_filter ${catkin_LIBRARIES})
+
+add_executable(pf_node src/pf_node.cpp)
+add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(pf_node ${catkin_LIBRARIES} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${PROJECT_NAME})
 
 # install
 install(
