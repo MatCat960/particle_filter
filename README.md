@@ -32,8 +32,10 @@ Process and measurement noise distribution are also taken into account, resultin
 
 To summarize, we can define an initialization phase, followed by the recursive iteration over four steps: prediction, weight update, resampling, and state estimation.
 
- 0. *Initialization*: A specific number of particles $P \in \mathbb{N}$ is generated according to a known distribution or uniformly distributed within the environment. Each particles represents an hypothesis of the state variables.  
-$$ x(0)_{k} \sim p(x(0)) $$
+ 0. *Initialization*: A specific number of particles $P \in \mathbb{N}$ is generated according to a known distribution or uniformly distributed within the environment. Each particles represents an hypothesis of the state variables.
+  ```math
+  x(0)_{k} \sim p(x(0))
+  ```  
 In the above equation, $x(0)_k$ is the initial state of the generic particle $k$, $p(x(0))$ is the initial distribution and the operator $\sim$ is used to denote that the particle is randomly obtained from the probability distribution.
 1. *Prediction*: The state of each particle is propagated following the state transition model of the system $f(x(t-1)_k, u(t))$, where $u(t)$ is the control input. The result is a new particles distribution. $$ x(t)_k = f(x(t-1)_k, u(t)) $$
 2. *Weight update*: The likelihood of sensor measurements $y(t)$ is exploited to update the weight of each particle.  $$ w(t)_k = p(y(t) | x(t)_k) $$
