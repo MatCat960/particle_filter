@@ -37,10 +37,19 @@ To summarize, we can define an initialization phase, followed by the recursive i
   x(0)_{k} \sim p(x(0))
   ```  
 In the above equation, $x(0)_k$ is the initial state of the generic particle $k$, $p(x(0))$ is the initial distribution and the operator $\sim$ is used to denote that the particle is randomly obtained from the probability distribution.
-1. *Prediction*: The state of each particle is propagated following the state transition model of the system $f(x(t-1)_k, u(t))$, where $u(t)$ is the control input. The result is a new particles distribution. $$ x(t)_k = f(x(t-1)_k, u(t)) $$
-2. *Weight update*: The likelihood of sensor measurements $y(t)$ is exploited to update the weight of each particle.  $$ w(t)_k = p(y(t) | x(t)_k) $$
+1. *Prediction*: The state of each particle is propagated following the state transition model of the system $f(x(t-1)_k, u(t))$, where $u(t)$ is the control input. The result is a new particles distribution.
+```math
+  x(t)_k = f(x(t-1)_k, u(t))
+  ```  
+2. *Weight update*: The likelihood of sensor measurements $y(t)$ is exploited to update the weight of each particle.
+```math
+  w(t)_k = p(y(t) | x(t)_k)
+  ```  
 3. *Resampling*: The particles are resampled according to their weights, in order to give more weight to particles that are more likely to match the observed data. This means that the new set of particles will be more concentrated in regions of the state space that have the highest probability.
-4. *State Estimation*: The state estimate $\hat{x}(t)$ is calculated as a a weighted sum of particles. $$ \hat{x}(t) =  \frac{\sum w(t)_k x(t)_k}{\sum w(t)_k}$$
+4. *State Estimation*: The state estimate $\hat{x}(t)$ is calculated as a a weighted sum of particles.
+```math
+  \hat{x}(t) =  \frac{\sum w(t)_k x(t)_k}{\sum w(t)_k}
+  ```  
 
 Once the state estimate has been obtained, the algorithm jumps back at step 1 to start a new iteration.
 
