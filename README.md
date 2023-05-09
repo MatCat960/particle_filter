@@ -3,7 +3,7 @@
 This repo contains a C++ library for Particle Filter Localization.
 The library does not include ROS dependencies, but the package provides a ROS wrapper node for ROS integration.
 
-Code Example: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)]([https://colab.research.google.com/github/weiji14/deepbedmap/](https://colab.research.google.com/drive/16F_hXnZ7kelZXz1Km6rEIRhC3zlmKq1e?usp=sharing)]
+Code Example: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)]([https://colab.research.google.com/drive/16F_hXnZ7kelZXz1Km6rEIRhC3zlmKq1e?usp=sharing)])
 
 ## Dependencies
 
