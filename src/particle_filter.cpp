@@ -94,8 +94,11 @@ Eigen::VectorXd ParticleFilter::diffdriveKinematics(Eigen::VectorXd q, Eigen::Ve
     // !!! u = [wr, wl] !!!
     int n = q.size();
     int m = u.size();
-    double r = 0.033;                           // turtlebot3 burger wheel radius
-    double d = 0.16;                            // turtlebot3 burger distance between wheels
+    // leo rover
+    double r = 0.065;
+    double d = 0.313;                              
+    // double r = 0.033;                           // turtlebot3 burger wheel radius
+    // double d = 0.16;                            // turtlebot3 burger distance between wheels
     double th = q(2);                           // theta orientation
     Eigen::VectorXd q_next(n);
     Eigen::MatrixXd A;                     // state matrix A
@@ -104,7 +107,7 @@ Eigen::VectorXd ParticleFilter::diffdriveKinematics(Eigen::VectorXd q, Eigen::Ve
 
     q_next = q + A*u*dt;
 
-    // std::cout << "q_next: " << q_next.transpose() << std::endl;
+    // std::cout << "q_next vs q: " << (q_next - q).transpose() << std::endl;
 
     return q_next;
 }
@@ -336,6 +339,50 @@ void ParticleFilter::updateWeights2(std::vector<Eigen::VectorXd> observations, d
     w_ = w_ / total_weight;
 }
 
+// observations is a std::vector of Eigen::Vector2d with detected landmarks in their position, 100.0 for undetected
+// landmarks is a global std::vector of Eigen::Vector2d with known positions of landmarks
+void ParticleFilter::updateWeights3(std::vector<Eigen::VectorXd> observations, std::vector<Eigen::VectorXd> global_lms, double sigma = 0.1)
+{
+    // std::vector<Eigen::Vector2d> landmarks(3);
+    // landmarks[0] = {3.5, 1.5};
+    // landmarks[1] = {5.0, 3.2};
+    // landmarks[2] = {3.0, 6.3};
+
+    double total_weight = 0.0;
+    for (int i = 0; i < n_; i++)
+    {
+        Eigen::VectorXd p = particles_.col(i);
+        double likelihood = 1.0;
+        for (int j = 0; j < observations.size(); j++)
+        {
+            if (observations[j](0) != 100.0 && observations[j](1) != 100.0)
+            {
+                Eigen::Vector2d obs = observations[j];
+
+                // Get landmark's known position relative to actual particle
+                Eigen::Vector2d ld;
+                double th = p(2);
+                double dx = global_lms[j](0) - p(0);
+                double dy = global_lms[j](1) - p(1);
+
+                ld(0) = dx * cos(th) + dy * sin(th);
+                ld(1) = -dx * sin(th) + dy * cos(th);
+
+                // std::cout << "Landmark relative position: " << ld.transpose() << std::endl;
+
+                likelihood *= std::exp(-0.5 * (pow((obs(0)-ld(0)), 2) / pow(sigma, 2) + pow((obs(1)-ld(1)), 2) / pow(sigma, 2)));
+            }
+        }
+
+        w_(i) = likelihood;
+        total_weight += w_(i);
+
+        // std::cout << "w_" << std::to_string(i) << " = " << likelihood << std::endl;
+    }
+
+    // normalize weights
+    w_ = w_ / total_weight;
+}
 
 void ParticleFilter::resample()
 {

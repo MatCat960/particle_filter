@@ -32,6 +32,7 @@ class ParticleFilter
         Eigen::VectorXd UAVKinematics(Eigen::VectorXd q, Eigen::VectorXd u, double dt);
         void updateWeights(Eigen::VectorXd observation, double sigma);
         void updateWeights2(std::vector<Eigen::VectorXd> observations, double sigma);
+        void updateWeights3(std::vector<Eigen::VectorXd> observations, std::vector<Eigen::VectorXd> global_lms, double sigma);
         void resample();         // outputs new set of particles
         void resampleUniform();
         Eigen::MatrixXd getParticles();

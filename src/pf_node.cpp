@@ -37,7 +37,7 @@ class Controller
 {
     public:
         // initialize filter with starting position and covariance!!
-        Controller(): nh_("~"), filter(PARTICLES_NUM, Eigen::Vector3d::Ones(), Eigen::Vector3d::Ones())
+        Controller(): nh_("~"), filter(PARTICLES_NUM, Eigen::Vector3d::Zero(), 0.5*Eigen::Vector3d::Ones())
         {
             // get params from launch file
             this->nh_.getParam("GRAPHICS_ON", GRAPHICS_ON);
@@ -58,7 +58,7 @@ class Controller
             // publish particles for RViz visualization
             if (GRAPHICS_ON)
             {
-                particles_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particles",1);
+                particles_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("particles",1);
             }
             timer_ = nh_.createTimer(ros::Duration(0.25), std::bind(&Controller::timerCallback, this));
 
@@ -111,7 +111,7 @@ class Controller
 
     
     private:
-        int PARTICLES_NUM = 500;
+        int PARTICLES_NUM = 5000;
         bool GRAPHICS_ON = false;
         bool USE_GROUND_TRUTH = false;
         bool VERBOSE = false;
@@ -138,7 +138,7 @@ void Controller::velCallback(const geometry_msgs::Twist::ConstPtr msg)
 {
     // std::cout << "Velocity callback" << std::endl;
     this->vel(0) = msg->linear.x;                                // linear vel is a value in [0, 100]
-    this->vel(1) = msg->linear.y;                              // steering angle is a value in [-180, 180] degrees --> conversion to rad 
+    this->vel(1) = msg->angular.z;                              // steering angle is a value in [-180, 180] degrees --> conversion to rad 
     // std::cout << "Vel: " << this->vel.transpose() << std::endl;
 }
 
@@ -202,22 +202,23 @@ void Controller::timerCallback()
             {
                 std::cout << "Landmark " << i << ": " << det.transpose() << std::endl;
             }
-            std::cout << "Actual velocity: " << this->vel.transpose() << std::endl;
+            // std::cout << "Actual velocity: " << this->vel.transpose() << std::endl;
         }
     }
     
     double dt = 0.25;
     double sigma = 1.0;
-    filter.predictUAV(this->vel, dt);              // change to correct kinematic model
+    filter.predict(this->vel, dt);              // change to correct kinematic model
     // std::cout << "Prediction completed" << std::endl;
-    filter.updateWeights2(this->detections, 0.1);
+    std::cout << "Predicted position : " << filter.getMean().transpose() << std::endl;
+    filter.updateWeights3(this->detections, lm_global, 0.1);
     // std::cout << "Weights updated" << std::endl;
     filter.resample();
 
     // Publish pose estimation
     nav_msgs::Odometry pose_msg;
     pose_msg.header.stamp = ros::Time::now();
-    pose_msg.header.frame_id = "map";
+    // pose_msg.header.frame_id = "map";
     pose_msg.pose.pose.position.x = filter.getMean()(0);
     pose_msg.pose.pose.position.y = filter.getMean()(1);
     pose_msg.pose.pose.position.z = 0.0;
@@ -235,16 +236,17 @@ void Controller::timerCallback()
 
     if (VERBOSE)
     {
-        std::cout << "Particles: \n" << filter.getParticles().transpose() << std::endl;
+        // std::cout << "Particles: \n" << filter.getParticles().transpose() << std::endl;
         std::cout << "Estimated position: " << filter.getMean().transpose() << std::endl;
     }
     
     if (USE_GROUND_TRUTH)
     {
         double error = sqrt(pow(this->realpose(0)-filter.getMean()(0),2) + pow(this->realpose(1)-filter.getMean()(1),2));
+        double error2 = sqrt(pow(this->realpose(0)-filter.getMean()(0),2) + pow(this->realpose(1)-filter.getMean()(1),2));
         if (VERBOSE)
         {
-            std::cout << "Estimation error: " << error << std::endl;
+            std::cout << "Estimation error: " << error2 << std::endl;
         }
     }
 

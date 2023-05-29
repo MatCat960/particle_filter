@@ -11,7 +11,7 @@
     <arg name="detections_topic" default="/detections"/>
 
     <!-- ground truth topic ONLY FOR TESTING PURPOSES -->
-    <arg name="ground_truth" default="/ground_truth"/>
+    <arg name="ground_truth" default="/ground_truth_local"/>
 
     <!-- topic where the calculated odom data is published -->
     <arg name="estimate_topic" default="/pf_estimate"/>
@@ -23,7 +23,7 @@
         <rosparam>
             GRAPHICS_ON: true
             USE_GROUND_TRUTH: true
-            FILE_PATH: "/home/"
+            FILE_PATH: "/home/mattia/navigation_ws/src/particle_filter/src/landmarks.txt"
             VERBOSE: true
         </rosparam>
         <remap from="/cmd_vel" to="$(arg cmd_vel_in)"/>
