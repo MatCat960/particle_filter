@@ -56,6 +56,11 @@ Eigen::MatrixXd ParticleFilter::getParticles()
     return particles_;
 }
 
+int ParticleFilter::getParticlesNumber()
+{
+    return n_;
+}
+
 void ParticleFilter::setParticles(Eigen::MatrixXd parts)
 {
     // std::cout << "Entered particles setter." << std::endl;
@@ -488,6 +493,62 @@ void ParticleFilter::matchObservation(Eigen::VectorXd q)
     }
 }
 
+void ParticleFilter::updateParticlesNumber(int new_num)
+{
+    std::default_random_engine gen;
+    std::vector<double> weights;
+    std::vector<double> resampled_weights(new_num);
+    std::vector<Eigen::VectorXd> init_particles;
+    std::vector<Eigen::VectorXd> resampled_particles(new_num);
+
+    // std::cout << "Weights: " << w_ << std::endl;
+
+    if (new_num <= n_)
+    {
+        w_ = w_.head(new_num);
+        particles_ = particles_.leftCols(new_num);
+        n_ = new_num;
+        return;
+    } else
+    {
+        for (int i = 0; i < n_; i++)
+        {
+            weights.push_back(w_(i));
+            init_particles.push_back(particles_.col(i));
+        }
+
+        /* std::discrete_distribution produces random integers on the interval [0, n), where the probability of each individual integer i is defined as w
+        i/S, that is the weight of the ith integer divided by the sum of all n weights. */
+        std::discrete_distribution<int> distribution(weights.begin(), weights.end());
+        w_.resize(new_num);
+        for (int i = 0; i < n_; i++)
+        {
+            int index = distribution(gen);
+            resampled_particles[i] = init_particles[index];
+            w_(i) = weights[index];
+        }
+        for (int i = 0; i < new_num - n_; i++)
+        {
+            int index = distribution(gen);
+            resampled_particles[n_ + i] = init_particles[index];
+            w_(n_ + i) = weights[index];
+        }
+
+        // std::cout << "Particles number updated." << std::endl;
+        
+
+        // Backwards conversion
+        particles_.resize(3, new_num);
+        for (int i = 0; i < new_num; i++)
+        {
+            particles_.col(i) = resampled_particles[i];
+        }
+
+        n_ = new_num;
+
+        // std::cout << "n : " << n_ << ", w size: " << w_.size() << ", particles size: " << particles_.cols() << std::endl;
+    }
+}
 
 Eigen::VectorXd ParticleFilter::getMean()
 {

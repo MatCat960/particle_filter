@@ -47,6 +47,8 @@ class ParticleFilter
         Eigen::VectorXd getMean();
         Eigen::MatrixXd getCovariance();
         void remove_outliers(Eigen::VectorXd mean, Eigen::MatrixXd cov_matrix, double threshold);
+        void updateParticlesNumber(int n);
+        int getParticlesNumber();
         
 
 };
