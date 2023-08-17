@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- read velocity from this topic -->
+    <arg name="cmd_vel_in" default="/cmd_vel"/>
+
+    <!-- topic where relative positions of detected landmarks are published.
+        WARNING: i-th landmark must be published in i-th position of the vector!
+        1st element of the vector must be (0.0, 0.0)
+        Undetected landmarks must be published with relative position of (100.0, 100.0) -->                 
+    <arg name="detections_topic" default="/detections"/>
+
+    <!-- ground truth topic ONLY FOR TESTING PURPOSES -->
+    <arg name="ground_truth" default="/ground_truth_local"/>
+
+    <!-- topic where the calculated odom data is published -->
+    <arg name="estimate_topic" default="/pf_estimate"/>
+
+    <!-- topic with poses of each particle ONLY FOR RVIZ VISUALIZATION -->
+    <arg name="visual_particles" default="/particles"/>
+
+    <arg name="ld_path" default="$(find particle_filter)/test_landmarks.txt" />
+    <arg name="GRAPHICS_ON" default="true"/>
+
+    <node name="pf_node"  pkg="particle_filter" type="pf_node" output="screen">
+        <param name="GRAPHICS_ON" value="$(arg GRAPHICS_ON)"/>
+        <param name="USE_GROUND_TRUTH" value="false"/>
+        <param name="FILE_PATH" value="$(arg ld_path)"/>
+        <param name="VERBOSE" value="true"/>
+        <param name="frame" value="odom"/>
+        
+        <remap from="/cmd_vel" to="$(arg cmd_vel_in)"/>
+        <remap from="/pf_estimate" to="$(arg estimate_topic)"/>
+        <remap from="/detections" to="$(arg detections_topic)"/>
+        <remap from="/ground_truth" to="$(arg ground_truth)"/>
+        <remap from="/particles" to="$(arg visual_particles)"/>
+    </node>
+    
+    <node if="$(arg GRAPHICS_ON)" name="pf_rviz" type="rviz" pkg="rviz" args="-d $(find particle_filter)/rviz/pf.rviz" /> 
+
+</launch>
