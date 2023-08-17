@@ -192,6 +192,41 @@ void ParticleFilter::predict(Eigen::VectorXd u, double dt)
     }
 }
 
+void ParticleFilter::predictWithNoise(Eigen::VectorXd u, double dt, double sigma = 0.1)
+{
+    // double sigma_x, sigma_y, sigma_th;
+    // sigma_x = stateCovariance_(0);
+    // sigma_y = stateCovariance_(1);
+    // sigma_th = stateCovariance_(2);
+
+    std::default_random_engine gen;
+
+    for (int i=0; i < n_; i++)
+    {
+        // Add noise to control input
+        std::normal_distribution<double> sv(u(0), sigma);
+        std::normal_distribution<double> sw(u(1), sigma);
+        Eigen::VectorXd u_noise(2);
+        u_noise(0) = sv(gen);
+        u_noise(1) = sw(gen);
+
+        // Predict evolution of each particle
+        Eigen::VectorXd q_next(3);
+        q_next = diffdriveKinematics(particles_.col(i), u_noise, dt);
+
+        // Add noise to each particle
+        // std::normal_distribution<double> dist_x(q_next(0), sigma_x);
+        // std::normal_distribution<double> dist_y(q_next(1), sigma_y);
+        // std::normal_distribution<double> dist_th(q_next(2), sigma_th);
+
+        // Update particles
+        // particles_(0,i) = dist_x(gen);
+        // particles_(1,i) = dist_y(gen);
+        // particles_(2,i) = dist_th(gen);
+        particles_.col(i) = q_next;
+    }
+}
+
 void ParticleFilter::predictUAV(Eigen::VectorXd u, double dt)
 {
     if (u.size() < 3)
@@ -424,6 +459,43 @@ void ParticleFilter::resample()
     }
 
     // std::cout << "New particles: \n" << particles_.transpose() << std::endl;
+
+}
+
+void ParticleFilter::cumulativeResample()
+{
+    std::default_random_engine gen;
+    std::vector<double> cumulative_weights(n_);
+    std::vector<Eigen::VectorXd> resampled_particles(n_);
+
+    // calculate cumulative weight of particles
+    cumulative_weights[0] = w_(0);
+    for (int i = 0; i < n_; i++)
+    {
+        cumulative_weights[i] = cumulative_weights[i-1] + w_(i);
+    }
+
+    // Resample particles using cumulative weights
+    std::uniform_real_distribution<double> distribution(0.0, 1.0);
+    double stepSize = 1.0 / n_;
+    double currentWeight = distribution(gen)  * stepSize;
+    size_t newIndex = 0;
+
+    for (size_t i = 0; i < n_; ++i)
+    {
+        while (currentWeight < cumulative_weights[newIndex])
+        {
+            ++newIndex;
+        }
+        resampled_particles[i] = particles_.col(newIndex);
+        currentWeight += stepSize;
+    }
+
+    // Backwards conversion
+    for (int i = 0; i < n_; i++)
+    {
+        particles_.col(i) = resampled_particles[i];
+    }
 
 }
 
