@@ -44,6 +44,7 @@ class Controller
             this->nh_.getParam("USE_GROUND_TRUTH", USE_GROUND_TRUTH);
             this->nh_.getParam("FILE_PATH", FILE_PATH);
             this->nh_.getParam("VERBOSE", VERBOSE);
+            this->nh_.getParam("frame", frame);
 
 
             pf_pub_ = nh_.advertise<nav_msgs::Odometry>("pf_estimate",10);
@@ -115,6 +116,7 @@ class Controller
         bool GRAPHICS_ON = false;
         bool USE_GROUND_TRUTH = false;
         bool VERBOSE = false;
+        std::string frame = "map";
         std::string FILE_PATH;
         ParticleFilter filter;
         bool initialized;
@@ -218,7 +220,7 @@ void Controller::timerCallback()
     // Publish pose estimation
     nav_msgs::Odometry pose_msg;
     pose_msg.header.stamp = ros::Time::now();
-    // pose_msg.header.frame_id = "map";
+    pose_msg.header.frame_id = frame;
     pose_msg.pose.pose.position.x = filter.getMean()(0);
     pose_msg.pose.pose.position.y = filter.getMean()(1);
     pose_msg.pose.pose.position.z = 0.0;
@@ -257,7 +259,7 @@ void Controller::timerCallback()
         particles.markers.resize(PARTICLES_NUM);
         for (int i = 0; i < PARTICLES_NUM; i++)
         {
-            particles.markers[i].header.frame_id = "map";
+            particles.markers[i].header.frame_id = frame;
             particles.markers[i].header.stamp = ros::Time::now();
             particles.markers[i].ns = "particles";
             particles.markers[i].id = i;
