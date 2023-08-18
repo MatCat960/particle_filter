@@ -26,6 +26,7 @@ class ParticleFilter
         void predict(Eigen::VectorXd u, double dt, double sigma);   // prediction step
         void predictUAV(Eigen::VectorXd u, double dt);
         void predictAckermann(Eigen::VectorXd u, double dt);
+        void predictWithNoise(Eigen::VectorXd u, double dt, double sigma);
         Eigen::VectorXd diffdriveKinematics(Eigen::VectorXd q, Eigen::VectorXd u, double dt);
         Eigen::VectorXd ackermannKinematics(Eigen::VectorXd q, Eigen::VectorXd u, double dt);
         Eigen::MatrixXd multiDiffdriveKinematics(Eigen::MatrixXd q, Eigen::MatrixXd u, double dt);

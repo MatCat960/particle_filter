@@ -210,12 +210,12 @@ void Controller::timerCallback()
     
     double dt = 0.25;
     double sigma = 1.0;
-    filter.predict(this->vel, dt, 0.8);              // change to correct kinematic model
+    filter.predictWithNoise(this->vel, dt, 2.5);              // change to correct kinematic model
     // std::cout << "Prediction completed" << std::endl;
     std::cout << "Predicted position : " << filter.getMean().transpose() << std::endl;
     filter.updateWeights3(this->detections, lm_global, 0.05);
     // std::cout << "Weights updated" << std::endl;
-    filter.resample();
+    filter.cumulativeResample();
 
     // Publish pose estimation
     nav_msgs::Odometry pose_msg;
@@ -272,9 +272,9 @@ void Controller::timerCallback()
             particles.markers[i].pose.orientation.y = 0.0;
             particles.markers[i].pose.orientation.z = 0.0;
             particles.markers[i].pose.orientation.w = 1.0;
-            particles.markers[i].scale.x = 0.1;
-            particles.markers[i].scale.y = 0.1;
-            particles.markers[i].scale.z = 0.1;
+            particles.markers[i].scale.x = 0.05;
+            particles.markers[i].scale.y = 0.05;
+            particles.markers[i].scale.z = 0.05;
             particles.markers[i].color.a = 1.0;
             particles.markers[i].color.r = 0.0;
             particles.markers[i].color.g = 0.0;

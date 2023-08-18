@@ -470,7 +470,7 @@ void ParticleFilter::cumulativeResample()
 
     // calculate cumulative weight of particles
     cumulative_weights[0] = w_(0);
-    for (int i = 0; i < n_; i++)
+    for (int i = 1; i < n_; i++)
     {
         cumulative_weights[i] = cumulative_weights[i-1] + w_(i);
     }
@@ -481,15 +481,17 @@ void ParticleFilter::cumulativeResample()
     double currentWeight = distribution(gen)  * stepSize;
     size_t newIndex = 0;
 
+
     for (size_t i = 0; i < n_; ++i)
     {
-        while (currentWeight < cumulative_weights[newIndex])
+        while (currentWeight > cumulative_weights[newIndex])
         {
             ++newIndex;
         }
         resampled_particles[i] = particles_.col(newIndex);
         currentWeight += stepSize;
     }
+
 
     // Backwards conversion
     for (int i = 0; i < n_; i++)
