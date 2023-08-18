@@ -37,7 +37,7 @@ class Controller
 {
     public:
         // initialize filter with starting position and covariance!!
-        Controller(): nh_("~"), filter(PARTICLES_NUM, Eigen::Vector3d::Zero(), 0.5*Eigen::Vector3d::Ones())
+        Controller(): nh_("~"), filter(PARTICLES_NUM, Eigen::Vector3d::Zero(), 0.1*Eigen::Vector3d::Ones())
         {
             // get params from launch file
             this->nh_.getParam("GRAPHICS_ON", GRAPHICS_ON);
@@ -210,10 +210,10 @@ void Controller::timerCallback()
     
     double dt = 0.25;
     double sigma = 1.0;
-    filter.predict(this->vel, dt);              // change to correct kinematic model
+    filter.predict(this->vel, dt, 0.8);              // change to correct kinematic model
     // std::cout << "Prediction completed" << std::endl;
     std::cout << "Predicted position : " << filter.getMean().transpose() << std::endl;
-    filter.updateWeights3(this->detections, lm_global, 0.1);
+    filter.updateWeights3(this->detections, lm_global, 0.05);
     // std::cout << "Weights updated" << std::endl;
     filter.resample();
 

@@ -165,7 +165,7 @@ Eigen::MatrixXd ParticleFilter::multiDiffdriveKinematics(Eigen::MatrixXd q, Eige
 }
 
 
-void ParticleFilter::predict(Eigen::VectorXd u, double dt)
+void ParticleFilter::predict(Eigen::VectorXd u, double dt, double sigma = 0.1)
 {
     double sigma_x, sigma_y, sigma_th;
     sigma_x = stateCovariance_(0);
@@ -181,9 +181,9 @@ void ParticleFilter::predict(Eigen::VectorXd u, double dt)
         q_next = diffdriveKinematics(particles_.col(i), u, dt);
 
         // Add noise to each particle
-        std::normal_distribution<double> dist_x(q_next(0), sigma_x);
-        std::normal_distribution<double> dist_y(q_next(1), sigma_y);
-        std::normal_distribution<double> dist_th(q_next(2), sigma_th);
+        std::normal_distribution<double> dist_x(q_next(0), sigma);
+        std::normal_distribution<double> dist_y(q_next(1), sigma);
+        std::normal_distribution<double> dist_th(q_next(2), sigma);
 
         // Update particles
         particles_(0,i) = dist_x(gen);

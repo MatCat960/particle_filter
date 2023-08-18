@@ -23,8 +23,7 @@ class ParticleFilter
     public:
         ParticleFilter(int particles_num, Eigen::VectorXd initState, Eigen::VectorXd initCovariance);       // constructor
         ~ParticleFilter();                                              // destructor
-        void predict(Eigen::VectorXd u, double dt);   // prediction step
-        void predictWithNoise(Eigen::VectorXd u, double dt, double sigma);   // prediction step with noise on the control input
+        void predict(Eigen::VectorXd u, double dt, double sigma);   // prediction step
         void predictUAV(Eigen::VectorXd u, double dt);
         void predictAckermann(Eigen::VectorXd u, double dt);
         Eigen::VectorXd diffdriveKinematics(Eigen::VectorXd q, Eigen::VectorXd u, double dt);
