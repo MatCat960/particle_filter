@@ -1,8 +1,8 @@
 #ifndef PARTICLE_FILTER_H
 #define PARTICLE_FILTER_H
 
-#include <Eigen/Dense>
-#include <Eigen/Sparse>
+#include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/Sparse>
 #include <vector>
 
 // #include "GaussianMixtureModel/GaussianMixtureModel.h"
